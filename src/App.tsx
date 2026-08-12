@@ -32,6 +32,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const copyTimer = useRef<number | undefined>(undefined);
   const probeRef = useRef<HTMLSpanElement>(null);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     if (!probeRef.current) return;
@@ -55,22 +56,26 @@ function App() {
   }, [pixelBuffer, debouncedOptions]);
 
   const lines = output ? output.split('\n') : [];
+  const previewFontSize = Math.max(6, Math.min(9, 1400 / Math.max(1, columns)));
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       setError('Isso não parece ser uma imagem.');
       return;
     }
+    const requestId = ++requestIdRef.current;
     setIsLoading(true);
     setError(null);
     try {
       const buf = await loadPixelBuffer(file);
+      if (requestIdRef.current !== requestId) return;
       setPixelBuffer(buf);
       setFileName(file.name);
     } catch (err) {
+      if (requestIdRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : 'Não consegui ler essa imagem.');
     } finally {
-      setIsLoading(false);
+      if (requestIdRef.current === requestId) setIsLoading(false);
     }
   }, []);
 
@@ -92,14 +97,22 @@ function App() {
     setIsDragging(true);
   };
 
-  const onDragLeave = () => setIsDragging(false);
+  const onDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    const related = e.relatedTarget as Node | null;
+    if (related && e.currentTarget.contains(related)) return;
+    setIsDragging(false);
+  };
 
   const handleCopy = async () => {
     if (!output) return;
-    await navigator.clipboard.writeText(output);
-    setCopied(true);
-    window.clearTimeout(copyTimer.current);
-    copyTimer.current = window.setTimeout(() => setCopied(false), 1600);
+    try {
+      await navigator.clipboard.writeText(output);
+      setCopied(true);
+      window.clearTimeout(copyTimer.current);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setError('Não consegui copiar — permissão de área de transferência negada.');
+    }
   };
 
   const handleDownload = () => {
@@ -261,7 +274,9 @@ function App() {
           </div>
           <div className="preview-scroll">
             {output ? (
-              <pre className="preview">{output}</pre>
+              <pre className="preview" style={{ fontSize: `${previewFontSize}px` }}>
+                {output}
+              </pre>
             ) : (
               <p className="placeholder muted">o resultado aparece aqui</p>
             )}

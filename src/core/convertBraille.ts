@@ -1,7 +1,6 @@
 import type { ConvertOptions, PixelBuffer } from './types';
-import { computeGrid, sampleLuminance } from './grid';
-import { adjustBrightnessContrast } from './luminance';
-import { normalizeLevels } from './levels';
+import { computeGrid } from './grid';
+import { buildAdjustedValues } from './sampleValues';
 import { quantizeGrid } from './dither';
 
 const BIT_FOR_DOT: readonly [number, number][] = [
@@ -18,26 +17,7 @@ export function convertBraille(buf: PixelBuffer, options: ConvertOptions): strin
   const dotWidth = grid.cellWidth / 2;
   const dotHeight = grid.cellHeight / 4;
 
-  const values: number[][] = [];
-  for (let dr = 0; dr < dotRows; dr++) {
-    const row: number[] = [];
-    for (let dc = 0; dc < dotCols; dc++) {
-      const x0 = dc * dotWidth;
-      const y0 = dr * dotHeight;
-      row.push(sampleLuminance(buf, x0, x0 + dotWidth, y0, y0 + dotHeight));
-    }
-    values.push(row);
-  }
-
-  if (options.autoLevels !== false) normalizeLevels(values);
-
-  for (let r = 0; r < values.length; r++) {
-    for (let c = 0; c < values[r].length; c++) {
-      let v = adjustBrightnessContrast(values[r][c], options.brightness ?? 0, options.contrast ?? 0);
-      if (options.invert) v = 255 - v;
-      values[r][c] = v;
-    }
-  }
+  const values = buildAdjustedValues(buf, dotCols, dotRows, dotWidth, dotHeight, options);
 
   const toLevel = (v: number) => (v < 128 ? { level: 1, value: 0 } : { level: 0, value: 255 });
   const dots = quantizeGrid(values, toLevel, options.dithering !== false);
