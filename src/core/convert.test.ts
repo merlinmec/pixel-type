@@ -20,7 +20,6 @@ describe('computeGrid', () => {
     const grid = computeGrid(100, 50, 20, 2);
     expect(grid.columns).toBe(20);
     expect(grid.cellWidth).toBe(5);
-    // 50 / 5 / 2 = 5 linhas
     expect(grid.rows).toBe(5);
   });
 

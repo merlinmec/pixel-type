@@ -1,12 +1,9 @@
 import type { ConvertOptions, PixelBuffer } from './types';
 import { computeGrid, sampleLuminance } from './grid';
 import { adjustBrightnessContrast } from './luminance';
+import { normalizeLevels } from './levels';
 import { quantizeGrid } from './dither';
 
-/**
- * Bit de cada ponto dentro de um caractere Braille (grade 2 colunas x 4 linhas),
- * seguindo a numeração padrão Unicode (U+2800..U+28FF).
- */
 const BIT_FOR_DOT: readonly [number, number][] = [
   [0x01, 0x08],
   [0x02, 0x10],
@@ -14,11 +11,6 @@ const BIT_FOR_DOT: readonly [number, number][] = [
   [0x40, 0x80],
 ];
 
-/**
- * Cada caractere Braille codifica uma sub-grade binária 2x4 — 8 "pixels"
- * reais por 1 caractere de texto. É o formato de maior densidade aparente
- * entre os que continuam sendo texto puro.
- */
 export function convertBraille(buf: PixelBuffer, options: ConvertOptions): string {
   const grid = computeGrid(buf.width, buf.height, options.columns, options.charAspect ?? 2);
   const dotCols = grid.columns * 2;
@@ -32,15 +24,21 @@ export function convertBraille(buf: PixelBuffer, options: ConvertOptions): strin
     for (let dc = 0; dc < dotCols; dc++) {
       const x0 = dc * dotWidth;
       const y0 = dr * dotHeight;
-      let v = sampleLuminance(buf, x0, x0 + dotWidth, y0, y0 + dotHeight);
-      v = adjustBrightnessContrast(v, options.brightness ?? 0, options.contrast ?? 0);
-      if (options.invert) v = 255 - v;
-      row.push(v);
+      row.push(sampleLuminance(buf, x0, x0 + dotWidth, y0, y0 + dotHeight));
     }
     values.push(row);
   }
 
-  // ponto "aceso" = região escura (convenção tinta-no-papel)
+  if (options.autoLevels !== false) normalizeLevels(values);
+
+  for (let r = 0; r < values.length; r++) {
+    for (let c = 0; c < values[r].length; c++) {
+      let v = adjustBrightnessContrast(values[r][c], options.brightness ?? 0, options.contrast ?? 0);
+      if (options.invert) v = 255 - v;
+      values[r][c] = v;
+    }
+  }
+
   const toLevel = (v: number) => (v < 128 ? { level: 1, value: 0 } : { level: 0, value: 255 });
   const dots = quantizeGrid(values, toLevel, options.dithering !== false);
 
