@@ -1,8 +1,3 @@
-/**
- * Rampas de densidade: do caractere "mais vazio" (fundo claro) ao
- * "mais denso" (fundo escuro). Ordem importa — é o que o mapeamento
- * de luminância percorre.
- */
 export const RAMPS = {
   ascii: ' .:-=+*#%@',
   'ascii-extended':

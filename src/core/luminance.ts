@@ -1,15 +1,7 @@
-/**
- * Luminância perceptual (Rec. 601), não a média simples (R+G+B)/3 —
- * o olho pesa verde muito mais que azul.
- */
 export function rgbLuminance(r: number, g: number, b: number): number {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
-/**
- * Ajuste linear de brilho/contraste em torno do ponto médio (128).
- * brightness e contrast em -100..100; 0 é neutro.
- */
 export function adjustBrightnessContrast(
   y: number,
   brightness: number,

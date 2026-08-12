@@ -1,11 +1,3 @@
-/**
- * Quantiza uma grade de valores contínuos para níveis discretos.
- * Com `diffuse: true`, aplica difusão de erro Floyd–Steinberg — o erro
- * de cada quantização é espalhado para os vizinhos ainda não visitados,
- * o que evita bandas visíveis em gradientes suaves.
- *
- * `values` é mutado durante a difusão (propagação de erro nos vizinhos).
- */
 export function quantizeGrid(
   values: number[][],
   toLevel: (v: number) => { level: number; value: number },

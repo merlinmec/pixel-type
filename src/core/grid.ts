@@ -8,11 +8,6 @@ export interface Grid {
   cellHeight: number;
 }
 
-/**
- * Calcula quantas linhas cabem para uma dada largura em colunas,
- * corrigindo a proporção do glyph (tipicamente ~2x mais alto que largo).
- * Sem essa correção o resultado sai esticado verticalmente.
- */
 export function computeGrid(
   width: number,
   height: number,
@@ -26,7 +21,6 @@ export function computeGrid(
   return { columns: safeColumns, rows, cellWidth, cellHeight };
 }
 
-/** Luminância média dos pixels dentro do retângulo [x0,x1) x [y0,y1). */
 export function sampleLuminance(
   buf: PixelBuffer,
   x0: number,

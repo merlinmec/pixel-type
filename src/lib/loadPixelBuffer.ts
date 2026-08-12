@@ -1,12 +1,5 @@
 import type { PixelBuffer } from '../core/types';
 
-/**
- * Decodifica um arquivo de imagem e devolve os pixels crus, já
- * reduzidos a uma resolução de trabalho razoável (a conversão em
- * texto nunca precisa da imagem em resolução total — 100 colunas de
- * saída não ganham nada com uma fonte de 4000px de largura, só deixa
- * a amostragem mais lenta).
- */
 export async function loadPixelBuffer(file: File, maxDimension = 1600): Promise<PixelBuffer> {
   const bitmap = await createImageBitmap(file);
   try {
