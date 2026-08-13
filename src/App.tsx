@@ -5,23 +5,41 @@ import { measureGlyphAspect } from './lib/measureGlyphAspect';
 import { useDebounced } from './hooks/useDebounced';
 import './App.css';
 
-const CHARSET_LABELS: Record<Charset, string> = {
-  braille: 'Braille (mais denso)',
-  ascii: 'ASCII clássico',
-  'ascii-extended': 'ASCII estendido',
-  blocks: 'Blocos █▓▒░',
+const CHARSET_INFO: Record<Charset, { label: string; hint: string }> = {
+  edges: {
+    label: 'Bordas (recomendado)',
+    hint: 'Desenha os contornos da imagem com -, |, / e \\. É o que deixa mais fácil reconhecer o desenho no texto.',
+  },
+  braille: {
+    label: 'Braille',
+    hint: 'Altíssima resolução por caractere, mas os pontos ficam sutis — bom pra tons contínuos, difícil de "ler" à primeira vista.',
+  },
+  ascii: {
+    label: 'ASCII clássico',
+    hint: '10 caracteres de densidade (" .:-=+*#%@"). Visual retrô, poucos níveis de detalhe.',
+  },
+  'ascii-extended': {
+    label: 'ASCII estendido',
+    hint: 'Rampa de densidade bem mais longa — mais níveis de cinza, textura mais suave.',
+  },
+  blocks: {
+    label: 'Blocos █▓▒░',
+    hint: 'Poucos níveis, traços grossos. Funciona bem em fonte pequena ou de longe.',
+  },
 };
+const CHARSET_ORDER: Charset[] = ['edges', 'ascii-extended', 'ascii', 'blocks', 'braille'];
 
 function App() {
   const [pixelBuffer, setPixelBuffer] = useState<PixelBuffer | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [charAspect, setCharAspect] = useState(2);
 
-  const [charset, setCharset] = useState<Charset>('braille');
+  const [charset, setCharset] = useState<Charset>('edges');
   const [columns, setColumns] = useState(110);
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
@@ -39,6 +57,12 @@ function App() {
     const measured = measureGlyphAspect(probeRef.current);
     if (measured) setCharAspect(measured);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const options: ConvertOptions = useMemo(
     () => ({ charset, columns, brightness, contrast, invert, dithering, autoLevels, charAspect }),
@@ -71,6 +95,7 @@ function App() {
       if (requestIdRef.current !== requestId) return;
       setPixelBuffer(buf);
       setFileName(file.name);
+      setPreviewUrl(URL.createObjectURL(file));
     } catch (err) {
       if (requestIdRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : 'Não consegui ler essa imagem.');
@@ -184,12 +209,13 @@ function App() {
             <label className="field">
               <span>Formato</span>
               <select value={charset} onChange={(e) => setCharset(e.target.value as Charset)}>
-                {Object.entries(CHARSET_LABELS).map(([value, label]) => (
+                {CHARSET_ORDER.map((value) => (
                   <option key={value} value={value}>
-                    {label}
+                    {CHARSET_INFO[value].label}
                   </option>
                 ))}
               </select>
+              <p className="field-hint muted">{CHARSET_INFO[charset].hint}</p>
             </label>
 
             <label className="field">
@@ -260,9 +286,14 @@ function App() {
 
         <section className="panel preview-panel">
           <div className="preview-toolbar">
-            <span className="muted">
-              {pixelBuffer ? `${lines.length} linhas × ${columns} colunas` : 'sem imagem ainda'}
-            </span>
+            <div className="preview-info">
+              {previewUrl && (
+                <img src={previewUrl} alt="" className="preview-thumb" aria-hidden="true" />
+              )}
+              <span className="muted">
+                {pixelBuffer ? `${lines.length} linhas × ${columns} colunas` : 'sem imagem ainda'}
+              </span>
+            </div>
             <div className="actions">
               <button type="button" onClick={handleCopy} disabled={!output}>
                 {copied ? 'Copiado!' : 'Copiar'}

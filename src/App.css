@@ -179,6 +179,12 @@
   font-weight: 600;
 }
 
+.field-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .field select {
   width: 100%;
   padding: 9px 10px;
@@ -265,6 +271,20 @@ input[type='range']::-moz-range-thumb {
   gap: 12px;
   flex-wrap: wrap;
   font-family: var(--font-mono);
+}
+
+.preview-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 1px solid var(--border);
 }
 
 .actions {
