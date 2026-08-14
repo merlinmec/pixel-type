@@ -1,0 +1,302 @@
+GUIA DE ESTUDO — pixel-type (Text-Art)
+Gerado em 2026-08-14. Documento vivo — ver nota no final.
+
+============================================================
+1. O QUE É O PROJETO
+============================================================
+
+Text-Art (nome do pacote no package.json ainda é "textura", nome antigo do
+produto) é um conversor de imagem para arte de caracteres, 100% client-side
+— roda inteiro no navegador, sem backend, a imagem nunca sai da máquina de
+quem usa.
+
+O usuário arrasta, cola (Ctrl/Cmd+V) ou seleciona uma imagem, escolhe um
+formato de saída (Bordas/Sobel, Braille, ASCII clássico, ASCII estendido,
+Blocos), ajusta largura em colunas, brilho, contraste, inversão e
+dithering, e recebe um preview em tempo real que pode copiar como texto
+selecionável ou baixar como .txt.
+
+Pra quem: gente que quer gerar arte de texto genuína — não uma imagem
+"parecida com ASCII" travada num <canvas>, mas caracteres reais, coláveis
+em qualquer lugar que aceite texto (chat, editor, terminal, bio de rede
+social, README). O caso de uso central parece ser arte de linha
+(line art/estilo anime) e retratos, dado o esforço concentrado no modo de
+bordas.
+
+Problema de mercado que resolve: a maioria dos conversores de imagem pra
+ASCII existentes é CLI (jp2a, ascii-image-converter) — exige instalar algo
+e rodar comando, público técnico. As alternativas web existentes em geral
+processam no servidor (upload da imagem) e cobrem um único formato de
+saída por ferramenta (um site só faz braille, outro só faz ASCII). O
+pixel-type junta várias saídas num único lugar, sem instalar nada e sem
+subir a imagem pra lugar nenhum.
+
+============================================================
+2. COMO SE COMPARA A SOLUÇÕES SIMILARES NO MERCADO
+============================================================
+
+Pesquisa feita em 2026-08-14 (WebSearch). Panorama do espaço:
+
+- Ferramentas CLI estabelecidas: jp2a (converte JPEG pra ASCII, suporta
+  cores ANSI/HTML) e ascii-image-converter (Go, multiplataforma, também
+  suporta braille) — https://github.com/RandomGuyWithoutY/ascii-image-converter ,
+  https://manpages.ubuntu.com/manpages/bionic/man1/jp2a.1.html . Público
+  técnico, terminal, sem interface visual.
+
+- Conversores web genéricos de ASCII: manytools.org, vaultandzn.com e
+  outros — tipicamente um único formato (ASCII), foco em "converter rápido
+  e pronto", sem controle fino de detecção de borda ou fidelidade de
+  traço fino.
+  https://manytools.org/hacker-tools/convert-images-to-ascii-art/
+  https://vaultandzn.com/pages/ascii-art-generator
+
+- Conversores web específicos de Braille: pelo menos 5 ferramentas
+  dedicadas só a isso (a.tools, easyprotools.com, textarttools.com,
+  particular.ly, theartofwar.eu) — mercado de nicho já disputado, mas cada
+  uma isolada no próprio formato; nenhuma junta braille + ASCII + bordas
+  no mesmo lugar com o mesmo pipeline de ajuste de imagem.
+  https://a.tools/Tool.php?Id=347
+  https://easyprotools.com/image/generate-braille-art-from-image/
+  https://textarttools.com/Imagetobraille/
+  https://particular.ly/ascii-art/braille-art
+  https://theartofwar.eu/image-to-braille/
+
+Onde o pixel-type se diferencia (com base no que foi encontrado):
+
+1. Múltiplos formatos num único pipeline compartilhado (bordas, braille,
+   ASCII clássico, ASCII estendido, blocos), com os mesmos controles de
+   ajuste (auto-contraste, brilho/contraste, dithering, inversão)
+   aplicados a todos — a maioria das ferramentas do mercado cobre um
+   formato por site/ferramenta.
+2. Modo de bordas com detecção de Sobel rodando pixel a pixel na
+   resolução ORIGINAL da imagem (não na grade já reduzida), com
+   max-pooling por célula — ver seção 3 e 5. Esse é o diferencial técnico
+   mais concreto do projeto: a maioria dos conversores ASCII do mercado
+   trabalha por densidade de luminância por célula (quanto mais escuro,
+   caractere mais "cheio"), não por direção de contorno. Ferramentas de
+   "ASCII edge detection" existem, mas não é o padrão do mercado geral de
+   conversores de imagem-pra-texto.
+3. 100% client-side: nem toda ferramenta web do mercado deixa isso
+   explícito ou garantido — aqui é uma decisão de arquitetura verificável
+   no próprio código (sem chamada de rede pra processar imagem).
+4. Correção de proporção do glifo medida em tempo real no navegador
+   (measureGlyphAspect), em vez de um fator fixo — outros conversores
+   costumam usar uma razão de aspecto fixa (tipicamente 2:1 ou 0.5), o que
+   distorce a imagem dependendo da fonte/renderização do usuário.
+
+Onde o mercado está à frente ou o pixel-type ainda não cobre: cor (a
+maioria das ferramentas de referência, incluindo jp2a, suporta saída
+colorida via ANSI/HTML — pixel-type por enquanto é monocromático/texto
+puro), e processamento em lote/múltiplas imagens (algumas ferramentas web
+mencionam "batch processing" — não há evidência disso no código atual).
+
+Fontes:
+https://github.com/solarkennedy/ascii-art-converter-comparison
+https://github.com/RandomGuyWithoutY/ascii-image-converter
+https://manpages.ubuntu.com/manpages/bionic/man1/jp2a.1.html
+
+============================================================
+3. DECISÕES TÉCNICAS TOMADAS E POR QUÊ
+============================================================
+
+Histórico é curto (12 commits, ~2 dias de trabalho corrido em 11 e 13/08),
+mas tem evidência real de pelo menos duas mudanças de rumo — não é só uma
+lista linear de features.
+
+a) Proporção da grade: fixa → medida em tempo real
+   Commit inicial (373e3d4) já converte imagem em texto, mas o commit
+   seguinte (11b8921, "Corrige proporção da grade") introduz
+   measureGlyphAspect.ts pra medir a proporção real do glifo renderizado
+   no navegador em vez de usar um valor fixo 2:1. Decisão: a proporção de
+   um caractere monoespaçado varia por fonte/SO/navegador; um valor fixo
+   distorce a imagem. Trade-off aceito: precisa medir no DOM (não é mais
+   puro), então essa lógica ficou em src/lib (que depende de DOM),
+   separada de src/core (que continua puro TS testável sem DOM).
+
+b) Auto-contraste (levels.ts) — adicionado no mesmo commit 11b8921, junto
+   com a correção de proporção. Esticamento de níveis (normaliza
+   min/max da imagem pra faixa 0-255) aplicado antes de brilho/contraste
+   manuais. Decisão: imagens com pouco contraste original (fotos "lavadas")
+   saíam ilegíveis em texto sem isso.
+
+c) Duplicação de lógica entre convertRamp e convertBraille → extraída
+   Commit 8d78229 ("Corrige achados da revisão da PR #1") cria
+   sampleValues.ts pra centralizar amostragem + auto-níveis +
+   brilho/contraste/invert, removendo duplicação que existia entre os dois
+   conversores. Evidência de que a PR #1 passou por revisão de fato (não
+   só auto-merge) — o commit também corrige uma race condition real de UI
+   (ver seção 5).
+
+d) MUDANÇA DE RUMO MAIS IMPORTANTE: formato padrão e onde o Sobel roda
+   - Commit 79b8381 (13/08): adiciona modo de Bordas (Sobel) e already o
+     torna o formato padrão, substituindo Braille como padrão. Motivo
+     declarado no commit: "o resultado em ASCII/braille/blocos dependia só
+     de densidade por célula, o que tornava a imagem original difícil de
+     reconhecer no texto." Ou seja: densidade de luminância sozinha não
+     bastava pra reconhecer a imagem original — precisava de estrutura de
+     contorno.
+   - Commit 3081aab (mesmo dia, 13/08), muito próximo no tempo: CORRIGE o
+     próprio modo de bordas recém-criado. O Sobel do commit anterior
+     rodava em cima da grade já reduzida (média de luminância por célula
+     de texto de 15-20px). Um traço fino de 1-2px (comum em line
+     art/anime) virava uma média quase igual ao fundo e desaparecia antes
+     mesmo do cálculo de borda rodar. A correção: mover a detecção pra
+     pixel a pixel na resolução ORIGINAL da imagem (buildEdgeField) e
+     fazer cada célula de texto herdar o traço de maior magnitude que ela
+     contém (max-pooling), em vez de calcular borda sobre a média.
+   Essa sequência (79b8381 → 3081aab) é a evidência mais clara de "decisão
+   tomada, testada, e corrigida" no histórico: a primeira implementação do
+   Sobel foi conceitualmente razoável mas errada na ordem das operações
+   (reduzir-depois-detectar vs. detectar-depois-reduzir), e isso só ficou
+   óbvio testando com imagens de traço fino.
+
+e) Redesign visual + tema claro/escuro (8a826ff) — trocou paleta
+   laranja/bege monoespaçada neutra por identidade roxo/rosa da "mecdev"
+   (marca pessoal do autor, reaproveitando logo de um projeto irmão de
+   portfolio). Produto renomeado de "Textura" pra "Text-Art" (mas o
+   package.json ainda ficou com "name": "textura" — não foi atualizado,
+   sinal de que é um detalhe interno que passou despercebido). Decisão de
+   engenharia notável aqui: o fundo com gradiente foi implementado como
+   `body::before` fixed em vez de background direto do body, porque com
+   `background-attachment` direto e `height:100%` (em vez de
+   `min-height`), o gradiente "descolava" e aparecia uma faixa de cor
+   errada quando a página crescia além de 1 viewport — bug visual real
+   encontrado e documentado na própria mensagem de commit.
+
+f) Paste de imagem via Ctrl+V (d065c8a) — decisão justificada
+   explicitamente no commit: o diálogo nativo de "escolher arquivo" não dá
+   pra customizar (quem decide o que aparece ali é o SO/navegador), então
+   colar da área de transferência foi adicionado como terceiro caminho de
+   entrada (clique, arraste, colar) sem tentar reinventar o file picker.
+
+============================================================
+4. TEMAS PARA ESTUDAR
+============================================================
+
+Cada tema abaixo está amarrado a uma decisão real encontrada no código ou
+no histórico — não é lista genérica.
+
+1. Detecção de bordas com operador de Sobel (visão computacional básica)
+   Por quê: é o núcleo do modo padrão do app (convertEdges.ts). Entender
+   os kernels GX/GY, por que a magnitude do gradiente é hypot(gx, gy), e
+   por que a direção do traço (directionChar) usa atan2 normalizado pra
+   0-180° (uma borda não tem "lado", só orientação) é pré-requisito pra
+   explicar a parte mais sofisticada do projeto.
+
+2. Ordem de operações em pipelines de processamento de imagem
+   (downsample vs. detectar feature) — por quê: é literalmente o bug que
+   o commit 3081aab corrigiu. Reduzir resolução ANTES de detectar uma
+   feature fina (borda de 1-2px) destrói o sinal antes do algoritmo
+   rodar. É um princípio geral (aparece em visão computacional, áudio,
+   qualquer sinal com downsampling) e este projeto tem um caso real e
+   documentado disso pra usar como exemplo ao explicar pra alguém.
+
+3. Max-pooling como estratégia de agregação — por quê: usado em
+   buildEdgeField/convertEdges pra decidir qual traço uma célula de texto
+   "herda" (o de maior magnitude, não a média). É o mesmo conceito de
+   max-pooling usado em CNNs (redes convolucionais), aparecendo aqui de
+   forma isolada e pequena o suficiente pra estudar sem precisar de
+   contexto de deep learning.
+
+4. Correção de aspect ratio de fonte monoespaçada via medição real no DOM
+   (measureGlyphAspect.ts) — por quê: resolve um problema real (texto sai
+   "achatado" com proporção fixa) e é um bom exemplo de quando vale a
+   pena medir em vez de assumir uma constante, e o trade-off de mover essa
+   lógica pra fora do núcleo puro (src/core) pra uma camada que depende de
+   DOM (src/lib).
+
+5. Auto-contraste / esticamento de níveis (levels.ts, normalizeLevels vs.
+   normalizeLevelsFlat) — por quê: é a mesma operação (min-max stretch)
+   implementada duas vezes por causa de duas representações de dados
+   diferentes (grade 2D número[][] vs. buffer plano Float32Array na
+   resolução original). Bom gancho pra estudar por que às vezes vale
+   duplicar uma função pequena em vez de generalizar prematuramente (e
+   quando isso deixa de valer a pena).
+
+6. Dithering Floyd-Steinberg aplicado a caracteres em vez de pixels
+   (dither.ts, quantizeGrid) — por quê: é a técnica clássica de
+   "espalhar" o erro de arredondamento entre vizinhos, normalmente vista
+   em quantização de cor de imagem; aqui ela é aplicada pra decidir qual
+   caractere de uma rampa de densidade representa cada célula, evitando
+   bandas visíveis de transição.
+
+7. Corrida de condição (race condition) em upload assíncrono de UI —
+   por quê: é um bug real corrigido no commit 8d78229 (soltar duas imagens
+   em sequência rápida podia deixar a resolução mais lenta/obsoleta
+   sobrescrever a mais recente). O padrão de correção — um
+   `requestIdRef` pra descartar resultados de requisições obsoletas — é
+   um padrão de UI assíncrona genérico e reutilizável (equivalente ao que
+   bibliotecas como React Query resolvem por baixo dos panos).
+
+8. `background-attachment: fixed` vs. pseudo-elemento fixed pra fundo
+   decorativo em CSS — por quê: bug real documentado no commit 8a826ff
+   (gradiente "descolava" com height:100% em vez de min-height). Bom
+   estudo de caso de CSS de layout que quebra só em telas que crescem além
+   de 1 viewport — categoria de bug fácil de não pegar em teste manual
+   rápido.
+
+============================================================
+5. DIFICULDADES/PROBLEMAS REAIS ENCONTRADOS
+============================================================
+
+- Sobel na grade reduzida perdia traço fino (3081aab) — a dificuldade
+  técnica mais séria do projeto. A primeira versão do modo de bordas
+  (79b8381) funcionava para fotos comuns mas falhava especificamente em
+  line art/anime (traço fino, sem gradiente de sombra), exigindo mover
+  todo o cálculo pra resolução original + max-pooling. Ficou documentado
+  na própria mensagem de commit com o raciocínio completo.
+
+- Race condition no upload de imagem (8d78229) — soltar duas imagens em
+  sequência rápida podia fazer a conversão mais lenta (da imagem antiga)
+  terminar depois e sobrescrever o resultado da imagem mais recente.
+  Corrigido com um id de requisição pra descartar resultados obsoletos.
+
+- Falha silenciosa ao copiar (8d78229) — `navigator.clipboard.writeText`
+  podia falhar (permissão negada, contexto não seguro) sem que o usuário
+  soubesse; corrigido com try/catch mostrando erro.
+
+- onDragLeave disparando cedo demais (8d78229) — passar o cursor sobre
+  elementos filhos da dropzone durante o arraste tirava o destaque visual
+  antes da hora, porque o evento não verificava `relatedTarget`/`contains`.
+
+- Fundo com gradiente "descolando" em telas altas (8a826ff) — bug de CSS
+  puro: `background-attachment` direto no body combinado com
+  `height:100%` (em vez de `min-height`) deixava uma faixa de cor errada
+  visível quando a página crescia além de 1 viewport.
+
+- Tamanho de fonte do preview borrado (8d78229) — o cálculo adaptativo de
+  fonte pro preview tinha um piso baixo demais (3.5px), que deixava o
+  texto ilegível em larguras de coluna altas; subido pra 6px.
+
+Não há evidência no histórico de reverts completos ou mudanças de decisão
+abandonadas — as duas correções de rumo (proporção de grade e Sobel)
+foram evoluções sobre a mesma direção, não idas e vindas.
+
+============================================================
+6. COMO EXPLICAR ESSE PROJETO PRA ALGUÉM DE FORA
+============================================================
+
+O Text-Art é um site que transforma qualquer foto ou desenho em arte
+feita de texto de verdade — não uma imagem que parece com ASCII, mas
+caracteres reais que dá pra selecionar, copiar e colar em qualquer lugar
+que aceite texto, como um chat ou um editor. Tudo acontece no próprio
+navegador de quem usa: a imagem nunca é enviada pra nenhum servidor. A
+parte mais interessante por trás é como ele reconhece contornos: em vez
+de simplesmente pintar cada pedaço da imagem com um caractere mais ou
+menos "cheio" dependendo de quão escuro ele é (o que a maioria dos
+conversores desse tipo faz), o programa primeiro detecta as bordas da
+imagem em altíssima resolução e depois desenha um traço com a direção
+certa (um traço deitado, em pé, ou na diagonal) exatamente onde haveria
+um contorno — por isso um desenho de linha fina, tipo estilo anime, sai
+reconhecível mesmo em texto pequeno, o que a primeira versão do recurso
+não conseguia fazer direito.
+
+============================================================
+7. NOTA FINAL
+============================================================
+
+Este é um documento VIVO. Deve ser atualizado conforme o projeto evolui —
+não foi gerado uma vez pra ser esquecido. Sempre que houver uma mudança
+de rumo técnica significativa, uma nova feature relevante, ou uma
+dificuldade real resolvida, volte aqui e atualize as seções
+correspondentes (principalmente 3, 4 e 5).
