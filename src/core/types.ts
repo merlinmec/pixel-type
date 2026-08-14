@@ -4,7 +4,7 @@ export interface PixelBuffer {
   data: Uint8ClampedArray | Uint8Array;
 }
 
-export type Charset = 'ascii' | 'ascii-extended' | 'blocks' | 'braille';
+export type Charset = 'edges' | 'ascii' | 'ascii-extended' | 'blocks' | 'braille';
 
 export interface ConvertOptions {
   columns: number;

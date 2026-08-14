@@ -89,6 +89,33 @@ describe('convertToText — braille', () => {
   });
 });
 
+describe('convertToText — bordas (edges)', () => {
+  it('imagem sólida (sem borda) cai inteiramente na rampa', () => {
+    const buf = makeSolidBuffer(40, 40, [255, 255, 255]);
+    const text = convertToText(buf, { columns: 10, charset: 'edges', dithering: false });
+    const chars = new Set(text.replace(/\n/g, ''));
+    expect(chars).toEqual(new Set([RAMPS.ascii[0]]));
+  });
+
+  it('detecta uma borda nítida e desenha um traço orientado', () => {
+    const width = 40;
+    const height = 40;
+    const data = new Uint8ClampedArray(width * height * 4);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4;
+        const v = x < width / 2 ? 0 : 255;
+        data[i] = data[i + 1] = data[i + 2] = v;
+        data[i + 3] = 255;
+      }
+    }
+    const buf: PixelBuffer = { width, height, data };
+    const text = convertToText(buf, { columns: 10, charset: 'edges', dithering: false, autoLevels: false });
+    const hasEdgeChar = [...text].some((ch) => '-|/\\'.includes(ch));
+    expect(hasEdgeChar).toBe(true);
+  });
+});
+
 describe('convertToText — validação', () => {
   it('rejeita columns menor que 1', () => {
     const buf = makeSolidBuffer(4, 4, [0, 0, 0]);
