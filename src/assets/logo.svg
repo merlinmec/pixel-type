@@ -1,0 +1,14 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradienteMEC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#C4B5FD"/>
+    </linearGradient>
+  </defs>
+  <text x="10" y="35" font-family="Arial Black" font-size="30">
+    <tspan fill="#FFFFFF">&lt;</tspan>
+    <tspan fill="url(#gradienteMEC)">MEC</tspan>
+    <tspan fill="#FFFFFF" dy="1.2em" dx="-2.8em">DEV</tspan>
+    <tspan fill="#FFFFFF">/&gt;</tspan>
+  </text>
+</svg>
