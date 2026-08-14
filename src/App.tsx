@@ -107,6 +107,29 @@ function App() {
     }
   }, []);
 
+  // Diálogo nativo de "escolher arquivo" não dá pra customizar (quem decide
+  // o que aparece ali — recentes, nuvem, etc. — é o SO/navegador). O que dá
+  // pra oferecer é um segundo caminho: colar (Ctrl/Cmd+V) uma imagem que já
+  // esteja na área de transferência, sem precisar ter baixado o arquivo.
+  useEffect(() => {
+    const onPasteImage = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            void handleFile(file);
+          }
+          return;
+        }
+      }
+    };
+    window.addEventListener('paste', onPasteImage);
+    return () => window.removeEventListener('paste', onPasteImage);
+  }, [handleFile]);
+
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) void handleFile(file);
@@ -199,7 +222,7 @@ function App() {
               <p>
                 <strong>{fileName}</strong>
                 <br />
-                <span className="muted">clique ou arraste outra imagem pra trocar</span>
+                <span className="muted">clique, arraste ou cole (Ctrl+V) outra imagem pra trocar</span>
               </p>
             ) : (
               <p>
@@ -209,7 +232,7 @@ function App() {
                 <br />
                 Arraste uma imagem aqui
                 <br />
-                <span className="muted">ou clique para escolher um arquivo</span>
+                <span className="muted">clique pra escolher um arquivo, ou cole com Ctrl+V</span>
               </p>
             )}
           </div>
