@@ -3,6 +3,8 @@ import { convertToText, type Charset, type ConvertOptions, type PixelBuffer } fr
 import { loadPixelBuffer } from './lib/loadPixelBuffer';
 import { measureGlyphAspect } from './lib/measureGlyphAspect';
 import { useDebounced } from './hooks/useDebounced';
+import { useTheme } from './hooks/useTheme';
+import logo from './assets/logo.svg';
 import './App.css';
 
 const CHARSET_INFO: Record<Charset, { label: string; hint: string }> = {
@@ -30,6 +32,7 @@ const CHARSET_INFO: Record<Charset, { label: string; hint: string }> = {
 const CHARSET_ORDER: Charset[] = ['edges', 'ascii-extended', 'ascii', 'blocks', 'braille'];
 
 function App() {
+  const [theme, toggleTheme] = useTheme();
   const [pixelBuffer, setPixelBuffer] = useState<PixelBuffer | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -146,7 +149,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = (fileName?.replace(/\.[^.]+$/, '') || 'textura') + '.txt';
+    a.download = (fileName?.replace(/\.[^.]+$/, '') || 'text-art') + '.txt';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -158,13 +161,21 @@ function App() {
       </span>
 
       <header className="app-header">
-        <p className="eyebrow">Textura</p>
-        <h1>Imagem vira texto de verdade</h1>
-        <p className="dek">
-          Envie uma imagem, ajuste os controles e copie o resultado — é texto puro, cola em
-          qualquer lugar.
-        </p>
-        <span className="badge">100% no navegador — nada é enviado a um servidor</span>
+        <img src={logo} alt="mecdev" className="brand-logo" />
+        <div className="brand-center">
+          <span className="brand-name">Text-Art</span>
+          <h1>Converta imagens em arte de texto, pronta pra colar em qualquer lugar</h1>
+        </div>
+        <button
+          type="button"
+          className="theme-toggle"
+          data-theme={theme}
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+        >
+          <span className="theme-toggle-thumb" aria-hidden="true" />
+        </button>
       </header>
 
       <main className="layout">
@@ -193,7 +204,7 @@ function App() {
             ) : (
               <p>
                 <span className="dropzone-icon" aria-hidden="true">
-                  ⌘
+                  🖼️
                 </span>
                 <br />
                 Arraste uma imagem aqui
@@ -309,7 +320,11 @@ function App() {
                 {output}
               </pre>
             ) : (
-              <p className="placeholder muted">o resultado aparece aqui</p>
+              <div className="placeholder" role="img" aria-label="A arte em texto aparece aqui depois de enviar uma imagem">
+                <span className="placeholder-glyph" aria-hidden="true">
+                  {'<✦/>'}
+                </span>
+              </div>
             )}
           </div>
         </section>
