@@ -20,50 +20,121 @@
 }
 
 .app-header {
+  position: relative;
   border-bottom: 1px solid var(--border);
   padding-bottom: 28px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
 }
 
-.eyebrow {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 0 0 6px;
+.brand-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 64px;
+  width: auto;
+  filter: drop-shadow(0 0 22px rgba(139, 92, 246, 0.6));
+}
+
+.theme-toggle {
+  /* Trilho fica sempre "céu noturno", nos dois temas — é o que dá contraste
+     de verdade pro sol dourado (e pra lua) em vez de se misturar com o
+     fundo claro. */
+  position: absolute;
+  right: 0;
+  top: 4px;
+  width: 54px;
+  height: 30px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #150f26;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #241a3d, #150f26);
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  filter: brightness(1.15);
+}
+
+/* A bolinha do switch É o sol/a lua — não um ícone em cima dela. Em modo
+   escuro é uma esfera cinza-azulada com uma "mordida" (::after na cor do
+   trilho) que cria a silhueta de crescente; em modo claro essa mordida some
+   e ela vira um sol quente com glow. */
+.theme-toggle-thumb {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+  box-shadow: 0 0 6px rgba(148, 163, 184, 0.55);
+  transform: translateX(0);
+  transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.theme-toggle-thumb::after {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  /* Mesma cor do trilho (fixo, não muda com o tema) — é o que "morde" a
+     esfera e forma o crescente. */
+  background: #1c1430;
+  transition: opacity 0.2s ease;
+}
+
+.theme-toggle[data-theme='light'] .theme-toggle-thumb {
+  transform: translateX(24px);
+  background: radial-gradient(circle at 34% 32%, #fff6c8, #ffcb3d 55%, #ff9d0b);
+  box-shadow: 0 0 12px 2px rgba(255, 172, 28, 0.75);
+}
+
+.theme-toggle[data-theme='light'] .theme-toggle-thumb::after {
+  opacity: 0;
+}
+
+.brand-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 5vw, 3.2rem);
+  letter-spacing: -0.01em;
+  background: linear-gradient(92deg, var(--accent-soft) 0%, var(--accent) 55%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .app-header h1 {
-  font-family: var(--font-mono);
-  font-size: clamp(1.7rem, 4vw, 2.4rem);
-  margin: 0 0 12px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  color: var(--muted);
+  font-size: clamp(0.85rem, 2.1vw, 1.2rem);
+  max-width: 100%;
+  margin: 0;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
-.dek {
-  color: var(--muted);
-  max-width: 60ch;
-  margin: 0 0 16px;
-  line-height: 1.6;
-  font-size: 15.5px;
-}
-
-.badge {
-  display: inline-flex;
-  align-self: flex-start;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 5px 12px;
+@media (max-width: 640px) {
+  .app-header h1 {
+    white-space: normal;
+  }
 }
 
 .layout {
@@ -82,30 +153,31 @@
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 1px 2px rgba(20, 15, 5, 0.04);
+  box-shadow: 0 8px 30px rgba(15, 11, 26, 0.35);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .dropzone {
-  border: 1.5px dashed var(--border);
-  border-radius: 10px;
+  border: 2px dashed var(--border);
+  border-radius: 16px;
   padding: 36px 16px;
   text-align: center;
   cursor: pointer;
   color: var(--muted);
   line-height: 1.6;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .dropzone-icon {
   display: inline-block;
-  font-size: 22px;
-  color: var(--accent);
+  font-size: 30px;
   margin-bottom: 6px;
+  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
 }
 
 .dropzone p {
@@ -121,12 +193,14 @@
   border-color: var(--accent);
   color: var(--text);
   outline: none;
+  transform: translateY(-1px);
 }
 
 .dropzone--active {
   border-color: var(--accent);
   background: var(--surface-2);
   color: var(--text);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .muted {
@@ -138,9 +212,9 @@
   color: var(--danger);
   font-size: 13.5px;
   margin: 0;
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 10px;
   padding: 8px 12px;
 }
 
@@ -173,18 +247,24 @@
 }
 
 .field .value {
-  color: var(--accent);
+  color: var(--accent-soft);
   text-transform: none;
   letter-spacing: 0;
   font-weight: 600;
 }
 
+.field-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .field select {
   width: 100%;
   padding: 9px 10px;
-  border-radius: 7px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--text);
   font: inherit;
 }
@@ -216,9 +296,9 @@ input[type='range']::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
   border: 2px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(139, 92, 246, 0.6);
   cursor: pointer;
 }
 
@@ -226,9 +306,9 @@ input[type='range']::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
   border: 2px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(139, 92, 246, 0.6);
   cursor: pointer;
 }
 
@@ -267,44 +347,62 @@ input[type='range']::-moz-range-thumb {
   font-family: var(--font-mono);
 }
 
+.preview-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
 .actions {
   display: flex;
   gap: 8px;
 }
 
 .actions button {
-  border: 1px solid var(--accent);
-  background: var(--accent);
+  border: none;
+  background: linear-gradient(92deg, var(--accent-2) 0%, var(--accent) 60%, var(--accent-soft) 130%);
   color: var(--accent-contrast);
-  padding: 8px 16px;
-  border-radius: 7px;
+  padding: 9px 18px;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 600;
-  transition: filter 0.12s ease;
+  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.45);
+  transition: filter 0.12s ease, transform 0.12s ease;
 }
 
 .actions button:hover:not(:disabled) {
   filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
 .actions button.secondary {
-  border-color: var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-weight: 400;
+  font-weight: 500;
+  box-shadow: none;
+  border: 1px solid var(--border);
 }
 
 .actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
+  transform: none;
 }
 
 .preview-scroll {
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 16px;
   background: var(--surface-2);
   min-height: 360px;
   max-height: 72vh;
@@ -325,7 +423,35 @@ input[type='range']::-moz-range-thumb {
   margin: auto;
 }
 
+.placeholder-glyph {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 40px;
+  letter-spacing: 0.02em;
+  background: linear-gradient(92deg, var(--accent-soft) 0%, var(--accent) 55%, var(--accent-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0.5;
+  animation: placeholder-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes placeholder-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .placeholder-glyph {
+    animation: none;
+    opacity: 0.5;
+  }
+
   .dropzone,
   .actions button {
     transition: none;

@@ -3,25 +3,46 @@ import { convertToText, type Charset, type ConvertOptions, type PixelBuffer } fr
 import { loadPixelBuffer } from './lib/loadPixelBuffer';
 import { measureGlyphAspect } from './lib/measureGlyphAspect';
 import { useDebounced } from './hooks/useDebounced';
+import { useTheme } from './hooks/useTheme';
+import logo from './assets/logo.svg';
 import './App.css';
 
-const CHARSET_LABELS: Record<Charset, string> = {
-  braille: 'Braille (mais denso)',
-  ascii: 'ASCII clássico',
-  'ascii-extended': 'ASCII estendido',
-  blocks: 'Blocos █▓▒░',
+const CHARSET_INFO: Record<Charset, { label: string; hint: string }> = {
+  edges: {
+    label: 'Bordas (recomendado)',
+    hint: 'Desenha os contornos da imagem com -, |, / e \\. É o que deixa mais fácil reconhecer o desenho no texto.',
+  },
+  braille: {
+    label: 'Braille',
+    hint: 'Altíssima resolução por caractere, mas os pontos ficam sutis — bom pra tons contínuos, difícil de "ler" à primeira vista.',
+  },
+  ascii: {
+    label: 'ASCII clássico',
+    hint: '10 caracteres de densidade (" .:-=+*#%@"). Visual retrô, poucos níveis de detalhe.',
+  },
+  'ascii-extended': {
+    label: 'ASCII estendido',
+    hint: 'Rampa de densidade bem mais longa — mais níveis de cinza, textura mais suave.',
+  },
+  blocks: {
+    label: 'Blocos █▓▒░',
+    hint: 'Poucos níveis, traços grossos. Funciona bem em fonte pequena ou de longe.',
+  },
 };
+const CHARSET_ORDER: Charset[] = ['edges', 'ascii-extended', 'ascii', 'blocks', 'braille'];
 
 function App() {
+  const [theme, toggleTheme] = useTheme();
   const [pixelBuffer, setPixelBuffer] = useState<PixelBuffer | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [charAspect, setCharAspect] = useState(2);
 
-  const [charset, setCharset] = useState<Charset>('braille');
+  const [charset, setCharset] = useState<Charset>('edges');
   const [columns, setColumns] = useState(110);
   const [brightness, setBrightness] = useState(0);
   const [contrast, setContrast] = useState(0);
@@ -39,6 +60,12 @@ function App() {
     const measured = measureGlyphAspect(probeRef.current);
     if (measured) setCharAspect(measured);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const options: ConvertOptions = useMemo(
     () => ({ charset, columns, brightness, contrast, invert, dithering, autoLevels, charAspect }),
@@ -71,6 +98,7 @@ function App() {
       if (requestIdRef.current !== requestId) return;
       setPixelBuffer(buf);
       setFileName(file.name);
+      setPreviewUrl(URL.createObjectURL(file));
     } catch (err) {
       if (requestIdRef.current !== requestId) return;
       setError(err instanceof Error ? err.message : 'Não consegui ler essa imagem.');
@@ -78,6 +106,29 @@ function App() {
       if (requestIdRef.current === requestId) setIsLoading(false);
     }
   }, []);
+
+  // Diálogo nativo de "escolher arquivo" não dá pra customizar (quem decide
+  // o que aparece ali — recentes, nuvem, etc. — é o SO/navegador). O que dá
+  // pra oferecer é um segundo caminho: colar (Ctrl/Cmd+V) uma imagem que já
+  // esteja na área de transferência, sem precisar ter baixado o arquivo.
+  useEffect(() => {
+    const onPasteImage = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            void handleFile(file);
+          }
+          return;
+        }
+      }
+    };
+    window.addEventListener('paste', onPasteImage);
+    return () => window.removeEventListener('paste', onPasteImage);
+  }, [handleFile]);
 
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +172,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = (fileName?.replace(/\.[^.]+$/, '') || 'textura') + '.txt';
+    a.download = (fileName?.replace(/\.[^.]+$/, '') || 'text-art') + '.txt';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -133,13 +184,21 @@ function App() {
       </span>
 
       <header className="app-header">
-        <p className="eyebrow">Textura</p>
-        <h1>Imagem vira texto de verdade</h1>
-        <p className="dek">
-          Envie uma imagem, ajuste os controles e copie o resultado — é texto puro, cola em
-          qualquer lugar.
-        </p>
-        <span className="badge">100% no navegador — nada é enviado a um servidor</span>
+        <img src={logo} alt="mecdev" className="brand-logo" />
+        <div className="brand-center">
+          <span className="brand-name">Text-Art</span>
+          <h1>Converta imagens em arte de texto, pronta pra colar em qualquer lugar</h1>
+        </div>
+        <button
+          type="button"
+          className="theme-toggle"
+          data-theme={theme}
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+          title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+        >
+          <span className="theme-toggle-thumb" aria-hidden="true" />
+        </button>
       </header>
 
       <main className="layout">
@@ -163,17 +222,17 @@ function App() {
               <p>
                 <strong>{fileName}</strong>
                 <br />
-                <span className="muted">clique ou arraste outra imagem pra trocar</span>
+                <span className="muted">clique, arraste ou cole (Ctrl+V) outra imagem pra trocar</span>
               </p>
             ) : (
               <p>
                 <span className="dropzone-icon" aria-hidden="true">
-                  ⌘
+                  🖼️
                 </span>
                 <br />
                 Arraste uma imagem aqui
                 <br />
-                <span className="muted">ou clique para escolher um arquivo</span>
+                <span className="muted">clique pra escolher um arquivo, ou cole com Ctrl+V</span>
               </p>
             )}
           </div>
@@ -184,12 +243,13 @@ function App() {
             <label className="field">
               <span>Formato</span>
               <select value={charset} onChange={(e) => setCharset(e.target.value as Charset)}>
-                {Object.entries(CHARSET_LABELS).map(([value, label]) => (
+                {CHARSET_ORDER.map((value) => (
                   <option key={value} value={value}>
-                    {label}
+                    {CHARSET_INFO[value].label}
                   </option>
                 ))}
               </select>
+              <p className="field-hint muted">{CHARSET_INFO[charset].hint}</p>
             </label>
 
             <label className="field">
@@ -260,9 +320,14 @@ function App() {
 
         <section className="panel preview-panel">
           <div className="preview-toolbar">
-            <span className="muted">
-              {pixelBuffer ? `${lines.length} linhas × ${columns} colunas` : 'sem imagem ainda'}
-            </span>
+            <div className="preview-info">
+              {previewUrl && (
+                <img src={previewUrl} alt="" className="preview-thumb" aria-hidden="true" />
+              )}
+              <span className="muted">
+                {pixelBuffer ? `${lines.length} linhas × ${columns} colunas` : 'sem imagem ainda'}
+              </span>
+            </div>
             <div className="actions">
               <button type="button" onClick={handleCopy} disabled={!output}>
                 {copied ? 'Copiado!' : 'Copiar'}
@@ -278,7 +343,11 @@ function App() {
                 {output}
               </pre>
             ) : (
-              <p className="placeholder muted">o resultado aparece aqui</p>
+              <div className="placeholder" role="img" aria-label="A arte em texto aparece aqui depois de enviar uma imagem">
+                <span className="placeholder-glyph" aria-hidden="true">
+                  {'<✦/>'}
+                </span>
+              </div>
             )}
           </div>
         </section>
