@@ -2,7 +2,7 @@ import type { ConvertOptions, PixelBuffer } from './types';
 import { computeGrid } from './grid';
 import { buildAdjustedValues } from './sampleValues';
 import { quantizeGrid } from './dither';
-import { RAMPS } from './ramps';
+import { RAMPS, rampQuantizer } from './ramps';
 import { rgbLuminance, adjustBrightnessContrast } from './luminance';
 import { normalizeLevelsFlat } from './levels';
 
@@ -64,7 +64,6 @@ function directionChar(gx: number, gy: number): string {
  */
 export function convertEdges(buf: PixelBuffer, options: ConvertOptions): string {
   const ramp = RAMPS.ascii;
-  const n = ramp.length;
   const grid = computeGrid(buf.width, buf.height, options.columns, options.charAspect ?? 2);
   const { columns: cols, rows, cellWidth, cellHeight } = grid;
   const values = buildAdjustedValues(buf, cols, rows, cellWidth, cellHeight, options);
@@ -88,11 +87,14 @@ export function convertEdges(buf: PixelBuffer, options: ConvertOptions): string 
   let maxMagnitude = 0;
 
   for (let r = 0; r < rows; r++) {
-    const y0 = Math.max(0, Math.floor(r * cellHeight));
-    const y1 = Math.min(height, Math.max(y0 + 1, Math.ceil((r + 1) * cellHeight)));
+    // Mesmo raciocínio de `sampleLuminance` (grid.ts): `round` nos dois
+    // limites em vez de floor/ceil independentes, pra célula não roubar o
+    // pixel de fronteira da vizinha ao fazer o max-pooling do gradiente.
+    const y0 = Math.max(0, Math.round(r * cellHeight));
+    const y1 = Math.min(height, Math.max(y0 + 1, Math.round((r + 1) * cellHeight)));
     for (let c = 0; c < cols; c++) {
-      const x0 = Math.max(0, Math.floor(c * cellWidth));
-      const x1 = Math.min(width, Math.max(x0 + 1, Math.ceil((c + 1) * cellWidth)));
+      const x0 = Math.max(0, Math.round(c * cellWidth));
+      const x1 = Math.min(width, Math.max(x0 + 1, Math.round((c + 1) * cellWidth)));
 
       let bestMag = -1;
       let bestGx = 0;
@@ -127,11 +129,7 @@ export function convertEdges(buf: PixelBuffer, options: ConvertOptions): string 
   // não transformar ruído de imagens muito planas em bordas falsas.
   const threshold = Math.max(24, maxMagnitude * 0.22);
 
-  const toLevel = (v: number) => {
-    const level = Math.min(n - 1, Math.max(0, Math.round(((255 - v) / 255) * (n - 1))));
-    const value = 255 - (level / (n - 1)) * 255;
-    return { level, value };
-  };
+  const toLevel = rampQuantizer(ramp);
   const levels = quantizeGrid(values, toLevel, options.dithering !== false);
 
   const lines: string[] = [];
