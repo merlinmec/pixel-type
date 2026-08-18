@@ -1,18 +1,25 @@
 :root {
-  --bg: #0f0b1a;
-  --bg-dot: rgba(139, 92, 246, 0.35);
-  --blob-pink: rgba(236, 72, 153, 0.22);
-  --blob-purple: rgba(139, 92, 246, 0.28);
-  --surface: #1a1428;
-  --surface-2: #211a33;
-  --text: #f2eefc;
-  --muted: #a89ac2;
-  --border: #362a52;
-  --accent: #8b5cf6;
-  --accent-2: #ec4899;
-  --accent-soft: #c4b5fd;
-  --accent-contrast: #ffffff;
-  --danger: #ff6b8b;
+  /* Âmbar fosforescente sobre preto quente — a paleta original (roxo/rosa
+     em gradiente sobre blob escuro) é o default mais repetido em interface
+     gerada por IA hoje, e não dizia nada sobre o que a ferramenta faz.
+     Âmbar-sobre-preto é o monitor de terminal CRT clássico: reforça o
+     conceito de "converter em texto" em vez de ser só uma cor bonita. */
+  --bg: #0d0a06;
+  --bg-dot: rgba(255, 176, 0, 0.18);
+  --surface: #1c150d;
+  --surface-2: #241b10;
+  --text: #f5ecd8;
+  --muted: #b39a6d;
+  --border: #3f2f18;
+  --accent: #ffb000;
+  --accent-soft: #ffd166;
+  --accent-contrast: #1a1207;
+  --danger: #ff6b5b;
+
+  /* Cantos quase retos e borda fina em vez de sombra flutuante — cartão de
+     app moderno tem canto de 16-20px e sombra suave; painel de terminal é
+     chapado. Usado em painéis, botões, select, dropzone. */
+  --radius: 4px;
 
   --font-display: 'Fredoka', 'Baloo 2', var(--font-sans);
   --font-mono: 'JetBrains Mono', 'Berkeley Mono', ui-monospace, 'Cascadia Code', 'SF Mono', Consolas,
@@ -22,24 +29,24 @@
   color-scheme: dark;
 }
 
-/* Mesmo roxo, fundo claro — trocado via botão (ver useTheme), não via
-   prefers-color-scheme do sistema. Cinza-lavanda em vez de branco/quase-branco,
-   pra não ficar estourado de tão claro. */
+/* Mesmo âmbar, fundo claro — trocado via botão (ver useTheme), não via
+   prefers-color-scheme do sistema. Pergaminho/papel velho em vez de
+   branco puro, continuando a referência "texto/impressão" em vez de virar
+   uma paleta clara genérica. */
 :root[data-theme='light'] {
-  --bg: #d3cce1;
-  --bg-dot: rgba(91, 33, 182, 0.2);
-  --blob-pink: rgba(190, 24, 93, 0.14);
-  --blob-purple: rgba(91, 33, 182, 0.16);
-  --surface: #e8e2f2;
-  --surface-2: #cec4dd;
-  --text: #201731;
-  --muted: #55496a;
-  --border: #b5a8cc;
-  --accent: #7c3aed;
-  --accent-2: #db2777;
-  --accent-soft: #8b5cf6;
-  --accent-contrast: #ffffff;
-  --danger: #c31d49;
+  --bg: #f3e7cf;
+  --bg-dot: rgba(120, 72, 12, 0.16);
+  --surface: #ece0c3;
+  --surface-2: #e1d1a8;
+  --text: #2b2013;
+  --muted: #6e5b39;
+  --border: #cdb989;
+  --accent: #b5730a;
+  --accent-soft: #d98f2b;
+  /* Preto quase puro, não branco: branco em cima de #b5730a fica abaixo de
+     4.5:1 (WCAG AA falha) — texto escuro nesse âmbar passa com folga. */
+  --accent-contrast: #140d02;
+  --danger: #b3261e;
 
   color-scheme: light;
 }
@@ -63,6 +70,10 @@ body {
   position: relative;
 }
 
+/* Grid de pontos (referência direta ao pixel/célula que a conversão usa) +
+   scanline horizontal bem sutil, no lugar dos dois blobs radiais coloridos
+   de antes — isso já é "hero gradient de landing page genérica", não tem
+   relação com o que a ferramenta faz. */
 body::before {
   content: '';
   position: fixed;
@@ -70,11 +81,16 @@ body::before {
   z-index: -1;
   background-image:
     radial-gradient(circle, var(--bg-dot) 1px, transparent 1px),
-    radial-gradient(ellipse 60% 40% at 15% -10%, var(--blob-pink), transparent),
-    radial-gradient(ellipse 55% 45% at 100% 0%, var(--blob-purple), transparent);
-  background-position: 0 0, 0 0, 0 0;
-  background-size: 26px 26px, auto, auto;
-  background-repeat: repeat, no-repeat, no-repeat;
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--accent) 5%, transparent),
+      color-mix(in srgb, var(--accent) 5%, transparent) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  background-position: 0 0, 0 0;
+  background-size: 26px 26px, 100% 4px;
+  background-repeat: repeat, repeat;
   transition: background-image 0.2s ease;
 }
 
