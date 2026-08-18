@@ -28,10 +28,15 @@ export function sampleLuminance(
   y0: number,
   y1: number,
 ): number {
-  const xs = Math.max(0, Math.floor(x0));
-  const xe = Math.min(buf.width, Math.max(xs + 1, Math.ceil(x1)));
-  const ys = Math.max(0, Math.floor(y0));
-  const ye = Math.min(buf.height, Math.max(ys + 1, Math.ceil(y1)));
+  // `round` nos dois limites (não `floor` no início + `ceil` no fim): quando
+  // o tamanho da célula não é inteiro, x1 desta célula é o mesmo valor
+  // fracionário que x0 da próxima — arredondar os dois do mesmo jeito faz o
+  // fim de uma bater exatamente com o início da outra. Com floor/ceil
+  // independentes, esse pixel de fronteira entrava nas duas células.
+  const xs = Math.max(0, Math.round(x0));
+  const xe = Math.min(buf.width, Math.max(xs + 1, Math.round(x1)));
+  const ys = Math.max(0, Math.round(y0));
+  const ye = Math.min(buf.height, Math.max(ys + 1, Math.round(y1)));
 
   let sum = 0;
   let count = 0;

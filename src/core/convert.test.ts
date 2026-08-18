@@ -40,6 +40,31 @@ describe('sampleLuminance', () => {
     const blue = makeSolidBuffer(2, 2, [0, 0, 255]);
     expect(sampleLuminance(green, 0, 2, 0, 2)).toBeGreaterThan(sampleLuminance(blue, 0, 2, 0, 2));
   });
+
+  it('não conta o pixel de fronteira em duas células quando o limite é fracionário', () => {
+    // 10 pixels numa linha, luminância crescente = índice do pixel — dá pra
+    // conferir exatamente quais índices cada amostra está somando.
+    const width = 10;
+    const data = new Uint8ClampedArray(width * 4);
+    for (let x = 0; x < width; x++) {
+      data[x * 4] = x; // R = índice; G = B = 0, então luminância = 0.299 * x
+      data[x * 4 + 3] = 255;
+    }
+    const buf: PixelBuffer = { width, height: 1, data };
+
+    // 3 colunas sobre 10 pixels -> cellWidth = 10/3 (fracionário de propósito).
+    const cellWidth = width / 3;
+    const meanOf = (indices: number[]) =>
+      indices.reduce((sum, i) => sum + 0.299 * i, 0) / indices.length;
+
+    const cell0 = sampleLuminance(buf, 0, cellWidth, 0, 1);
+    const cell1 = sampleLuminance(buf, cellWidth, cellWidth * 2, 0, 1);
+
+    // Antes do fix (floor no início + ceil no fim), a célula 0 também
+    // pegava o pixel 3 (que pertence à célula 1), inflando essa média.
+    expect(cell0).toBeCloseTo(meanOf([0, 1, 2]), 5);
+    expect(cell1).toBeCloseTo(meanOf([3, 4, 5, 6]), 5);
+  });
 });
 
 describe('convertToText — rampa (ascii/blocks)', () => {
