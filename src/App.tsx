@@ -57,8 +57,20 @@ function App() {
 
   useEffect(() => {
     if (!probeRef.current) return;
-    const measured = measureGlyphAspect(probeRef.current);
-    if (measured) setCharAspect(measured);
+    const measure = () => {
+      if (!probeRef.current) return;
+      const measured = measureGlyphAspect(probeRef.current);
+      if (measured) setCharAspect(measured);
+    };
+    // Mede já, com a fonte que estiver disponível agora (fallback ou não),
+    // pra não atrasar a primeira conversão — e remede quando a webfont
+    // (carregada com display=swap, ver index.html) terminar. Sem isso, numa
+    // visita com cache frio a medição inicial usa as métricas da fonte de
+    // fallback e o charAspect errado fica preso pelo resto da sessão.
+    measure();
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      document.fonts.ready.then(measure);
+    }
   }, []);
 
   useEffect(() => {
