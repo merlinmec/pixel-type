@@ -44,7 +44,6 @@
   top: 0;
   height: 64px;
   width: auto;
-  filter: drop-shadow(0 0 22px rgba(139, 92, 246, 0.6));
 }
 
 .theme-toggle {
@@ -114,10 +113,28 @@
   font-weight: 700;
   font-size: clamp(2.2rem, 5vw, 3.2rem);
   letter-spacing: -0.01em;
-  background: linear-gradient(92deg, var(--accent-soft) 0%, var(--accent) 55%, var(--accent-2) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
+}
+
+/* Cursor de texto piscando em vez do nome em gradiente clip-text — técnica
+   de landing page de startup que não fala nada sobre "arte de texto". Um
+   cursor de bloco é o que a própria ferramenta produz. */
+.brand-name::after {
+  content: '▍';
+  display: inline-block;
+  margin-left: 2px;
+  animation: brand-cursor-blink 1s steps(1) infinite;
+}
+
+@keyframes brand-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .app-header h1 {
@@ -153,31 +170,29 @@
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: var(--radius);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 8px 30px rgba(15, 11, 26, 0.35);
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .dropzone {
   border: 2px dashed var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   padding: 36px 16px;
   text-align: center;
   cursor: pointer;
   color: var(--muted);
   line-height: 1.6;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .dropzone-icon {
   display: inline-block;
   font-size: 30px;
   margin-bottom: 6px;
-  filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.6));
 }
 
 .dropzone p {
@@ -193,7 +208,6 @@
   border-color: var(--accent);
   color: var(--text);
   outline: none;
-  transform: translateY(-1px);
 }
 
 .dropzone--active {
@@ -262,7 +276,7 @@
 .field select {
   width: 100%;
   padding: 9px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
@@ -290,25 +304,27 @@ input[type='range']::-moz-range-track {
   background: var(--border);
 }
 
+/* Thumb em bloco quadrado, não bolinha — o mesmo motivo do cursor de texto
+   piscando no logo: reforça "isto é um caractere", não decoração à toa. */
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   margin-top: -6px;
   width: 16px;
   height: 16px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-radius: var(--radius);
+  background: var(--accent);
   border: 2px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 1px var(--accent);
   cursor: pointer;
 }
 
 input[type='range']::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-radius: var(--radius);
+  background: var(--accent);
   border: 2px solid var(--surface);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 10px rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 1px var(--accent);
   cursor: pointer;
 }
 
@@ -357,7 +373,7 @@ input[type='range']::-moz-range-thumb {
   width: 32px;
   height: 32px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: 1px solid var(--border);
 }
 
@@ -367,28 +383,40 @@ input[type='range']::-moz-range-thumb {
 }
 
 .actions button {
-  border: none;
-  background: linear-gradient(92deg, var(--accent-2) 0%, var(--accent) 60%, var(--accent-soft) 130%);
+  border: 1px solid var(--accent);
+  background: var(--accent);
   color: var(--accent-contrast);
-  padding: 9px 18px;
-  border-radius: 999px;
+  padding: 9px 16px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 13.5px;
+  font-family: var(--font-mono);
+  font-size: 13px;
   font-weight: 600;
-  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.45);
-  transition: filter 0.12s ease, transform 0.12s ease;
+  transition: filter 0.12s ease;
+}
+
+/* Colchetes em vez de pílula com gradiente — o mesmo botão de qualquer
+   "app moderno", só reforça a leitura de "isto é texto de terminal". */
+.actions button::before {
+  content: '[';
+  margin-right: 6px;
+  opacity: 0.55;
+}
+
+.actions button::after {
+  content: ']';
+  margin-left: 6px;
+  opacity: 0.55;
 }
 
 .actions button:hover:not(:disabled) {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
+  filter: brightness(1.12);
 }
 
 .actions button.secondary {
-  background: var(--surface-2);
+  background: transparent;
   color: var(--text);
   font-weight: 500;
-  box-shadow: none;
   border: 1px solid var(--border);
 }
 
@@ -396,13 +424,12 @@ input[type='range']::-moz-range-thumb {
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
-  transform: none;
 }
 
 .preview-scroll {
   overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   min-height: 360px;
   max-height: 72vh;
@@ -428,10 +455,7 @@ input[type='range']::-moz-range-thumb {
   font-weight: 600;
   font-size: 40px;
   letter-spacing: 0.02em;
-  background: linear-gradient(92deg, var(--accent-soft) 0%, var(--accent) 55%, var(--accent-2) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
   opacity: 0.5;
   animation: placeholder-pulse 2.6s ease-in-out infinite;
 }
@@ -450,6 +474,11 @@ input[type='range']::-moz-range-thumb {
   .placeholder-glyph {
     animation: none;
     opacity: 0.5;
+  }
+
+  .brand-name::after {
+    animation: none;
+    opacity: 1;
   }
 
   .dropzone,
