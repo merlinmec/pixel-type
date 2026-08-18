@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Guia de estudo pessoal — vivo, atualizado localmente, não é pra
+# compartilhar no repositório
+mec-explain.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
