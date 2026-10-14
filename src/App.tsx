@@ -4,7 +4,7 @@ import { loadPixelBuffer } from './lib/loadPixelBuffer';
 import { measureGlyphAspect } from './lib/measureGlyphAspect';
 import { useDebounced } from './hooks/useDebounced';
 import { useTheme } from './hooks/useTheme';
-import logo from './assets/logo.svg';
+import { Logo } from './components/Logo';
 import './App.css';
 
 const CHARSET_INFO: Record<Charset, { label: string; hint: string }> = {
@@ -196,7 +196,7 @@ function App() {
       </span>
 
       <header className="app-header">
-        <img src={logo} alt="mecdev" className="brand-logo" />
+        <Logo className="brand-logo" />
         <div className="brand-center">
           <span className="brand-name">Text-Art</span>
           <h1>Converta imagens em arte de texto, pronta pra colar em qualquer lugar</h1>
