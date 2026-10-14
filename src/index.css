@@ -16,6 +16,11 @@
   --accent-contrast: #1a1207;
   --danger: #ff6b5b;
 
+  /* Gradiente do "MEC" no logo (ver components/Logo.tsx): o roxo é a cor
+     da marca mecdev, que fica igual nos projetos dela, não o âmbar daqui. */
+  --logo-mec-start: #8b5cf6;
+  --logo-mec-end: #c4b5fd;
+
   /* Cantos quase retos e borda fina em vez de sombra flutuante — cartão de
      app moderno tem canto de 16-20px e sombra suave; painel de terminal é
      chapado. Usado em painéis, botões, select, dropzone. */
@@ -47,6 +52,10 @@
      4.5:1 (WCAG AA falha) — texto escuro nesse âmbar passa com folga. */
   --accent-contrast: #140d02;
   --danger: #b3261e;
+
+  /* O lilás claro do tema escuro some no pergaminho: mesmo roxo, mais fundo. */
+  --logo-mec-start: #5b21b6;
+  --logo-mec-end: #7c3aed;
 
   color-scheme: light;
 }
