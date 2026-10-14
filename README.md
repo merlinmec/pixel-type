@@ -4,7 +4,7 @@ Converte uma imagem em arte de caracteres — texto de verdade, selecionável,
 copiável e colável em qualquer lugar (chat, editor, terminal). Roda
 inteiro no navegador, sem backend: a imagem nunca sai da máquina de quem usa.
 
-![Screenshot do Text-Art convertendo uma imagem em Braille](docs/screenshot.jpeg)
+![Text-Art desenhando "A Grande Onda", de Hokusai, no formato Bordas](docs/screenshot.jpeg)
 
 ## Como funciona
 
